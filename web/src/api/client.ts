@@ -59,18 +59,23 @@ export type SubsystemsResponse = {
   }>;
 };
 
-function apiBaseUrl(): string {
-  /** Dev: always same-origin `/api` so the Vite proxy is used (ignores stray `VITE_*` in `.env`). */
+/**
+ * Full backend origin (no trailing slash), from `VITE_API_URL` in production/preview builds.
+ * In `vite dev`, always `""` so requests use same-origin `/api/...` and the dev proxy.
+ *
+ * Example: `fetch(\`${API_URL}/api/snapshot/current\`)` (this module uses the paths below).
+ */
+export const API_URL = (() => {
   if (import.meta.env.DEV) return "";
-  const v = import.meta.env.VITE_API_BASE_URL;
-  if (typeof v === "string" && v.trim() !== "") return v.trim().replace(/\/$/, "");
-  return "";
-}
+  const v = import.meta.env.VITE_API_URL;
+  if (typeof v !== "string") return "";
+  const t = v.trim();
+  return t === "" ? "" : t.replace(/\/$/, "");
+})();
 
 function apiUrl(path: string): string {
   const p = path.startsWith("/") ? path : `/${path}`;
-  const base = apiBaseUrl();
-  return base ? `${base}${p}` : p;
+  return API_URL ? `${API_URL}${p}` : p;
 }
 
 async function apiGet<T>(path: string): Promise<T> {

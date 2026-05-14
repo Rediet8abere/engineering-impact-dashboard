@@ -1,5 +1,27 @@
 import { Link } from "react-router-dom";
+import { API_URL } from "../api/client";
 import { useLeaderboard, useSnapshot } from "../api/hooks";
+
+function isLikelyNetworkFailure(error: unknown): boolean {
+  if (error instanceof TypeError) {
+    const m = error.message.toLowerCase();
+    return m.includes("fetch") || m.includes("network") || m.includes("failed to load");
+  }
+  const s = String(error);
+  return (
+    s.includes("Failed to fetch") ||
+    s.includes("NetworkError") ||
+    s.includes("Load failed") ||
+    s.toLowerCase().includes("network request failed")
+  );
+}
+
+function viteApiBaseLabel(): string {
+  if (import.meta.env.DEV) {
+    return "(dev — /api on this origin; Vite proxies to the API)";
+  }
+  return API_URL || "(same page origin — relative /api)";
+}
 
 export function LeaderboardPage() {
   const snap = useSnapshot();
@@ -7,10 +29,40 @@ export function LeaderboardPage() {
 
   if (snap.isLoading || lb.isLoading) return <div className="panel">Loading…</div>;
   if (snap.isError || lb.isError) {
+    const err = snap.error ?? lb.error;
+    const network = isLikelyNetworkFailure(err);
+
     return (
       <div className="panel error">
-        Failed to load dashboard. For local dev, run the API and use the Vite proxy.{" "}
-        <span className="mono">{String(snap.error ?? lb.error)}</span>
+        <div style={{ fontWeight: 700, marginBottom: 6 }}>Failed to load dashboard</div>
+        {network ? (
+          <div className="muted" style={{ fontSize: 14, lineHeight: 1.55 }}>
+            <p style={{ margin: "0 0 8px" }}>
+              The browser could not complete the request to the API (<span className="mono">{String(err)}</span>). This
+              is often <strong>CORS</strong> or connectivity when the UI and API are on different hosts.
+            </p>
+            <ul style={{ margin: 0, paddingLeft: 20 }}>
+              <li>
+                API base for this build: <span className="mono">{viteApiBaseLabel()}</span>
+              </li>
+              <li>
+                On <strong>Render</strong> (API service): remove <span className="mono">CORS_ORIGIN</span> if it is only{" "}
+                <span className="mono">http://localhost:5173</span>, or set a comma-separated list that includes your{" "}
+                <strong>production UI origin</strong> (exact scheme + host, no trailing slash), e.g.{" "}
+                <span className="mono">CORS_ORIGIN=http://localhost:5173,https://your-web.onrender.com</span>.
+              </li>
+            </ul>
+          </div>
+        ) : import.meta.env.DEV ? (
+          <div className="muted" style={{ fontSize: 14 }}>
+            Run the API (e.g. <span className="mono">npm run dev -w server</span> on port 4000). This dev server proxies{" "}
+            <span className="mono">/api</span> there. <span className="mono">{String(err)}</span>
+          </div>
+        ) : (
+          <div className="muted" style={{ fontSize: 14 }}>
+            <span className="mono">{String(err)}</span>
+          </div>
+        )}
       </div>
     );
   }

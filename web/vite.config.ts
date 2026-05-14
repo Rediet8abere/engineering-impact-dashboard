@@ -13,7 +13,7 @@ export default defineConfig({
       },
     },
   },
-  /** If you `vite preview` locally without `VITE_API_BASE_URL`, proxy `/api` to the dev server. */
+  /** If you `vite preview` locally without `VITE_API_URL`, proxy `/api` to the dev server. */
   preview: {
     host: "0.0.0.0",
     port: (() => {

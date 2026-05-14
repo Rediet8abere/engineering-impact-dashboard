@@ -2,12 +2,13 @@ import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
+import { corsOriginFromEnv } from "./corsOrigin.js";
 import { apiRouter } from "./routes/api.js";
 import { attachWebDistIfPresent } from "./staticWeb.js";
 
 export function createApp() {
   const app = express();
-  app.use(cors({ origin: process.env.CORS_ORIGIN ?? true }));
+  app.use(cors({ origin: corsOriginFromEnv() }));
   app.use(express.json({ limit: "1mb" }));
 
   app.get("/health", (_req, res) => {
