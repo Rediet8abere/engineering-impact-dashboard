@@ -4,10 +4,10 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev:api": "npm --prefix .. run dev -w server",
-    "dev": "node scripts/run-vite.mjs dev",
+    "dev": "vite",
     "build": "vite build",
-    "preview": "node scripts/run-vite.mjs preview"
+    "preview": "vite preview --host 0.0.0.0 --port 4173",
+    "start": "vite preview --host 0.0.0.0 --port 4173"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.62.8",
