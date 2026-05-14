@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Dimension table (not raw GitHub); used for display + FKs from rollups.
+model Engineer {
+  id           String   @id @default(uuid()) @db.Uuid
+  githubLogin  String   @unique
+  displayName  String
+
+  dailyFacts EngineerDailyFact[]
+  rollups    Engineer90dRollups[]
+}
+
+/// Append-only ingest archive. API must not read this table.
+model RawGitHubEvent {
+  id           String   @id @default(uuid()) @db.Uuid
+  dedupeKey    String   @unique
+  deliveryId   String?
+  eventType    String
+  action       String?
+  repoFullName String
+  payload      Json
+  receivedAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([receivedAt])
+  @@index([eventType, receivedAt])
+  @@map("raw_github_events")
+}
+
+/// Denormalized PR-level facts (ETL output). API reads this only indirectly via rollups for constraints;
+/// ETL reads raw + upserts here.
+model PullRequestFact {
+  prId             BigInt    @id
+  repoFullName     String
+  authorEngineerId String    @db.Uuid
+  subsystemSlug    String?
+  createdAt        DateTime  @db.Timestamptz(6)
+  mergedAt         DateTime? @db.Timestamptz(6)
+  cycleTimeHours   Float?
+  mergeWeight      Float     @default(1)
+  churnScore       Float     @default(0)
+  isRevert         Boolean   @default(false)
+  isHotfix         Boolean   @default(false)
+  additions        Int       @default(0)
+  deletions        Int       @default(0)
+  changedFiles     Int       @default(0)
+  reviewsDistinct  Int       @default(0)
+  updatedAt        DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([authorEngineerId, mergedAt])
+  @@index([repoFullName, mergedAt])
+  @@map("pull_request_facts")
+}
+
+/// Daily aggregates per engineer (precomputed). API may read for timelines.
+model EngineerDailyFact {
+  engineerId         String   @db.Uuid
+  day                DateTime @db.Date
+  merges             Int      @default(0)
+  weightedMerges     Float    @default(0)
+  reviewsSubmitted   Int      @default(0)
+  sumCycleTimeHours  Float    @default(0)
+  prsWithCycleTime   Int      @default(0)
+  churnEvents        Int      @default(0)
+  revertEvents       Int      @default(0)
+  hotfixMerges       Int      @default(0)
+  activeMergeDay     Int      @default(0)
+  updatedAt          DateTime @default(now()) @db.Timestamptz(6)
+
+  engineer Engineer @relation(fields: [engineerId], references: [id], onDelete: Cascade)
+
+  @@id([engineerId, day])
+  @@index([engineerId, day])
+  @@index([day])
+  @@map("engineer_daily_facts")
+}
+
+/// Rolling 90d snapshot per engineer for a given window end date (precomputed).
+model Engineer90dRollups {
+  engineerId                 String   @db.Uuid
+  windowEnd                  DateTime @db.Date
+  throughputScore            Float
+  consistencyScore           Float
+  reviewQualityScore         Float
+  stabilityScore             Float
+  subsystemComplexityScore   Float
+  impactScore                Float
+
+  merges90d          Int    @default(0)
+  weightedMerges90d Float   @default(0)
+  medianCycleHours   Float?
+  activeDays         Int     @default(0)
+  activeWeeks        Int     @default(0)
+
+  explainJson                Json
+  subsystemBreakdownJson     Json
+  dailyTimelineJson          Json
+  weeklyTimelineJson         Json
+
+  asOf DateTime @default(now()) @db.Timestamptz(6)
+
+  engineer Engineer @relation(fields: [engineerId], references: [id], onDelete: Cascade)
+
+  @@id([engineerId, windowEnd])
+  @@index([windowEnd, impactScore(sort: Desc)])
+  @@map("engineer_90d_rollups")
+}
