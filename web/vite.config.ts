@@ -13,7 +13,7 @@ export default defineConfig({
       },
     },
   },
-  /** If you run `vite preview` as its own Web Service (e.g. Render), bind for PaaS port scans. */
+  /** If you `vite preview` locally without `VITE_API_BASE_URL`, proxy `/api` to the dev server. */
   preview: {
     host: "0.0.0.0",
     port: (() => {
@@ -21,5 +21,11 @@ export default defineConfig({
       return Number.isFinite(n) && n > 0 ? n : 4173;
     })(),
     strictPort: true,
+    proxy: {
+      "/api": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
+    },
   },
 });

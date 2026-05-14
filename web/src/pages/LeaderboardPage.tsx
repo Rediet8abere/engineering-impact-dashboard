@@ -9,7 +9,7 @@ export function LeaderboardPage() {
   if (snap.isError || lb.isError) {
     return (
       <div className="panel error">
-        Failed to load dashboard. Is the API running on port 4000?{" "}
+        Failed to load dashboard. For local dev, run the API and use the Vite proxy.{" "}
         <span className="mono">{String(snap.error ?? lb.error)}</span>
       </div>
     );

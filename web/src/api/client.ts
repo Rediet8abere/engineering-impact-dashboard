@@ -59,8 +59,22 @@ export type SubsystemsResponse = {
   }>;
 };
 
+function apiBaseUrl(): string {
+  /** Dev: always same-origin `/api` so the Vite proxy is used (ignores stray `VITE_*` in `.env`). */
+  if (import.meta.env.DEV) return "";
+  const v = import.meta.env.VITE_API_BASE_URL;
+  if (typeof v === "string" && v.trim() !== "") return v.trim().replace(/\/$/, "");
+  return "";
+}
+
+function apiUrl(path: string): string {
+  const p = path.startsWith("/") ? path : `/${path}`;
+  const base = apiBaseUrl();
+  return base ? `${base}${p}` : p;
+}
+
 async function apiGet<T>(path: string): Promise<T> {
-  const res = await fetch(path, { headers: { Accept: "application/json" } });
+  const res = await fetch(apiUrl(path), { headers: { Accept: "application/json" } });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`${res.status} ${res.statusText}: ${text}`);
