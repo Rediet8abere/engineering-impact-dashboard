@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev:api": "npm --prefix .. run dev -w server",
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "node scripts/preview.mjs"
+    "dev": "node scripts/run-vite.mjs dev",
+    "build": "node scripts/run-vite.mjs build",
+    "preview": "node scripts/run-vite.mjs preview"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.62.8",
