@@ -5,6 +5,9 @@
     "server",
     "web"
   ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "db:generate": "npm run db:generate -w server",
     "db:migrate": "npm run db:migrate -w server",
@@ -12,6 +15,8 @@
     "etl": "npm run etl -w server",
     "dev:api": "npm run dev -w server",
     "dev:web": "npm run dev -w web",
-    "build": "npm run build -w server && npm run build -w web"
+    "build": "npm run db:generate -w server && npm run build -w server && npm run build -w web",
+    "start": "npm run start -w server",
+    "deploy": "npm run build && npm run db:migrate -w server && npm start"
   }
 }

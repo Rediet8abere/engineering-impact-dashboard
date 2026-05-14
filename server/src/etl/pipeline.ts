@@ -70,7 +70,9 @@ export async function rebuildPullRequestFactsFromRaw(): Promise<number> {
   let upserted = 0;
   for (const ev of events) {
     const body = parsePullRequestPayload(ev.payload);
-    const pr = body?.pull_request;
+    if (!body) continue;
+
+    const pr = body.pull_request;
     if (!pr?.id) continue;
 
     const action = body.action ?? ev.action ?? "";

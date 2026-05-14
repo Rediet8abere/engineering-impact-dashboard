@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import { apiRouter } from "./routes/api.js";
+import { attachWebDistIfPresent } from "./staticWeb.js";
 
 export function createApp() {
   const app = express();
@@ -12,6 +13,9 @@ export function createApp() {
   });
 
   app.use("/api", apiRouter);
+
+  // Production / full-stack: serve Vite build from `web/dist` when present (after `npm run build`).
+  attachWebDistIfPresent(app);
 
   return app;
 }

@@ -7,7 +7,9 @@ const app = createApp();
 
 const server = app.listen(port, () => {
   // eslint-disable-next-line no-console
-  console.log(`API listening on http://localhost:${port}`);
+  console.log(
+    `Listening on http://localhost:${port} (API + /health; static UI if web/dist exists from monorepo build)`,
+  );
 });
 
 const shutdown = async () => {
