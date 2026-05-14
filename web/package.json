@@ -7,7 +7,7 @@
     "dev:api": "npm --prefix .. run dev -w server",
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "node scripts/preview.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.62.8",
