@@ -108,6 +108,7 @@ Flags:
 Notes:
   - Facts/daily tables are rebuilt once; each window end recomputes 90d rollups only.
   - Large --from/--to ranges can take longer (one rollup pass per day).
+  - Load real PostHog/posthog PRs first: npm run ingest:github -w server  (then run this ETL).
 `.trim());
 }
 

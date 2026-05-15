@@ -1,6 +1,5 @@
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 
-export const prisma = new PrismaClient({
-  log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
-});
+/** One process-global client (API, ETL, ingest). Do not `new PrismaClient()` in loops or per chunk. */
+export const prisma = new PrismaClient();

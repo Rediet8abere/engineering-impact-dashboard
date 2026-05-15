@@ -19,9 +19,25 @@ cp server/.env.example server/.env
 npm install
 npm run db:generate
 npm run db:migrate
+```
+
+### Option A — quick local demo (synthetic PRs)
+
+```bash
 npm run db:seed
 npm run etl
 ```
+
+### Option B — **PostHog/posthog** from GitHub (recommended for real impact)
+
+Requires **`GITHUB_TOKEN`** (or `GH_TOKEN`) in **`server/.env`**. Ingest loads `server/.env` explicitly and sends `Authorization: Bearer …` on every GitHub request; without a token the script exits immediately (unauthenticated REST is ~60 requests/hour and will fail during ingest).
+
+```bash
+# Writes merged PRs (last 90 days by default) into raw_github_events, then rebuilds all fact tables.
+npm run load:posthog
+```
+
+Or step-by-step: `npm run ingest:github -w server` then `npm run etl -w server`. Ingest uses GitHub search windows `merged:FROM..TO` in **14-day** slices (under the 1000-result cap); tune with `--chunk-days` / `--days` / `--max-prs` / `--write-concurrency` (default **1** concurrent upsert; max **3**). For Neon, cap connections on `DATABASE_URL` (see `server/.env.example`, e.g. `connection_limit` / `pgbouncer=true`). See `npm run ingest:github -w server -- --help`.
 
 ## Run
 

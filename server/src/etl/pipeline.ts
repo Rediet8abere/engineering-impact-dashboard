@@ -8,6 +8,7 @@ type PullRequestPayload = {
   action?: string;
   pull_request?: {
     id: number;
+    title?: string;
     merged?: boolean;
     merged_at?: string | null;
     created_at?: string;
@@ -16,6 +17,8 @@ type PullRequestPayload = {
     changed_files?: number;
     user?: { login?: string; id?: number };
     labels?: Array<{ name?: string }>;
+    review_comments?: number;
+    requested_reviewers?: Array<{ login?: string }>;
   };
 };
 
@@ -42,10 +45,13 @@ function mergeWeightFromPr(args: {
 
 function subsystemFromLabels(labels: Array<{ name?: string }> | undefined): string | null {
   const names = (labels ?? []).map((l) => l.name?.toLowerCase() ?? "").filter(Boolean);
-  if (names.some((n) => n.includes("security"))) return "security";
-  if (names.some((n) => n.includes("frontend") || n.includes("ui"))) return "frontend";
-  if (names.some((n) => n.includes("ingestion") || n.includes("capture"))) return "ingestion";
-  if (names.some((n) => n.includes("hogql") || n.includes("query"))) return "hogql";
+  const blob = names.join(" ");
+  if (blob.includes("security") || blob.includes("audit")) return "security";
+  if (names.some((n) => n.includes("frontend") || n.includes("ui") || n.includes("ux"))) return "frontend";
+  if (blob.includes("ingestion") || blob.includes("capture") || blob.includes("pipeline")) return "ingestion";
+  if (blob.includes("hogql") || blob.includes("query") || blob.includes("clickhouse")) return "hogql";
+  if (blob.includes("experiment") || blob.includes("flag")) return "experimentation";
+  if (blob.includes("billing") || blob.includes("stripe")) return "billing";
   return "core";
 }
 
@@ -55,6 +61,8 @@ function complexityFromSubsystem(slug: string | null): number {
     security: 95,
     hogql: 88,
     ingestion: 82,
+    experimentation: 80,
+    billing: 78,
     frontend: 70,
     core: 60,
   };
@@ -86,8 +94,11 @@ export async function rebuildPullRequestFactsFromRaw(): Promise<number> {
     const login = pr.user?.login;
     if (!login) continue;
 
-    const engineer = await prisma.engineer.findUnique({ where: { githubLogin: login } });
-    if (!engineer) continue;
+    const engineer = await prisma.engineer.upsert({
+      where: { githubLogin: login },
+      create: { githubLogin: login, displayName: login },
+      update: {},
+    });
 
     const createdAt = new Date(pr.created_at ?? Date.now());
     const mergedAt = new Date(pr.merged_at as string);
@@ -99,9 +110,12 @@ export async function rebuildPullRequestFactsFromRaw(): Promise<number> {
     const changedFiles = pr.changed_files ?? 0;
 
     const labels = pr.labels ?? [];
-    const churnScore = labels.some((l) => l.name?.includes("churn")) ? 0.45 : 0.08;
-    const isRevert = labels.some((l) => (l.name ?? "").toLowerCase().includes("revert"));
-    const isHotfix = labels.some((l) => (l.name ?? "").toLowerCase().includes("hotfix"));
+    const titleLower = (pr.title ?? "").toLowerCase();
+    const churnScore = labels.some((l) => l.name?.toLowerCase().includes("churn")) ? 0.45 : 0.08;
+    const isRevert =
+      labels.some((l) => (l.name ?? "").toLowerCase().includes("revert")) || titleLower.startsWith("revert");
+    const isHotfix =
+      labels.some((l) => (l.name ?? "").toLowerCase().includes("hotfix")) || titleLower.includes("hotfix");
 
     const subsystemSlug = subsystemFromLabels(labels);
     const mergeWeight = mergeWeightFromPr({
@@ -112,8 +126,9 @@ export async function rebuildPullRequestFactsFromRaw(): Promise<number> {
       isHotfix,
     });
 
-    const reviewsDistinct =
-      labels.some((l) => l.name?.includes("many-reviews")) ? 4 : labels.some((l) => l.name?.includes("few-reviews")) ? 1 : 2;
+    const rc = pr.review_comments ?? 0;
+    const rq = (pr.requested_reviewers ?? []).length;
+    const reviewsDistinct = Math.min(12, Math.max(1, Math.round(rc + 0.5 * rq)));
 
     await prisma.pullRequestFact.upsert({
       where: { prId: BigInt(pr.id) },

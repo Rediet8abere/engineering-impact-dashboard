@@ -13,6 +13,8 @@
     "db:migrate": "npm run db:migrate -w server",
     "db:seed": "npm run db:seed -w server",
     "etl": "npm run etl -w server",
+    "ingest:github": "npm run ingest:github -w server",
+    "load:posthog": "npm run ingest:github -w server && npm run etl -w server",
     "dev:api": "npm run dev -w server",
     "dev:web": "npm run dev -w web",
     "build": "npm run db:generate -w server && npm run build -w server && npm run build -w web",

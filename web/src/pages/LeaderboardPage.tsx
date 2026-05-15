@@ -38,18 +38,19 @@ export function LeaderboardPage() {
         {network ? (
           <div className="muted" style={{ fontSize: 14, lineHeight: 1.55 }}>
             <p style={{ margin: "0 0 8px" }}>
-              The browser could not complete the request to the API (<span className="mono">{String(err)}</span>). This
-              is often <strong>CORS</strong> or connectivity when the UI and API are on different hosts.
+              The browser could not reach your API (<span className="mono">{String(err)}</span>). Often{" "}
+              <strong>CORS</strong> when the UI and API are on different hosts.
             </p>
             <ul style={{ margin: 0, paddingLeft: 20 }}>
               <li>
                 API base for this build: <span className="mono">{viteApiBaseLabel()}</span>
               </li>
               <li>
-                On <strong>Render</strong> (API service): remove <span className="mono">CORS_ORIGIN</span> if it is only{" "}
-                <span className="mono">http://localhost:5173</span>, or set a comma-separated list that includes your{" "}
-                <strong>production UI origin</strong> (exact scheme + host, no trailing slash), e.g.{" "}
-                <span className="mono">CORS_ORIGIN=http://localhost:5173,https://your-web.onrender.com</span>.
+                On <strong>Render</strong> (API): leave <span className="mono">CORS_ORIGIN</span> unset, or list your
+                production UI origin (comma-separated, no trailing slash).
+              </li>
+              <li>
+                After ingesting GitHub PRs, run <span className="mono">npm run etl -w server</span> so rollups exist.
               </li>
             </ul>
           </div>
@@ -71,9 +72,10 @@ export function LeaderboardPage() {
     <div className="panel">
       <div className="row" style={{ justifyContent: "space-between" }}>
         <div>
-          <div style={{ fontSize: 18, fontWeight: 700 }}>Top engineers (90 days)</div>
+          <div style={{ fontSize: 18, fontWeight: 700 }}>Top engineers by impact (90 days)</div>
           <div className="muted" style={{ marginTop: 6 }}>
-            Window ends <span className="mono">{lb.data.snapshot.window_end}</span>
+            Repo focus: <span className="mono">PostHog/posthog</span> · window ends{" "}
+            <span className="mono">{lb.data.snapshot.window_end}</span>
             {snap.data?.as_of ? (
               <>
                 {" "}
@@ -82,7 +84,7 @@ export function LeaderboardPage() {
             ) : null}
           </div>
         </div>
-        <span className="pill">Reads only precomputed rollups</span>
+        <span className="pill">Precomputed rollups only</span>
       </div>
 
       <div style={{ height: 14 }} />
@@ -122,7 +124,11 @@ export function LeaderboardPage() {
       <div style={{ height: 14 }} />
 
       <div className="muted" style={{ fontSize: 13, lineHeight: 1.5 }}>
-        Scoring is explainable: <span className="mono">0.3·throughput + 0.2·consistency + 0.2·review + 0.2·stability + 0.1·complexity</span> on a 0–100 pillar scale.
+        Scoring (0–100 pillars):{" "}
+        <span className="mono">
+          0.3·throughput + 0.2·consistency + 0.2·review_quality + 0.2·stability + 0.1·subsystem_complexity
+        </span>
+        . Data path: <span className="mono">raw_github_events → pull_request_facts → engineer_daily_facts → engineer_90d_rollups</span>.
       </div>
     </div>
   );

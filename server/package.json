@@ -12,7 +12,8 @@
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "prisma db seed",
-    "etl": "tsx src/etl/run.ts"
+    "etl": "tsx src/etl/run.ts",
+    "ingest:github": "tsx src/ingest/githubPulls.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -22,6 +23,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "p-limit": "^5.0.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
